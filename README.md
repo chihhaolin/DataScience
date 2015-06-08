@@ -1,2 +1,2 @@
 # DataScience
-This is my Johns Hopkins University Data Science Course Project
+This is my Data Science Project
