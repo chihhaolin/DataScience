@@ -1,0 +1,66 @@
+---
+title: "Coursera Statistical Inference Project Part 2: Basic Inferential Data Analysis"
+author: "CHLin"
+output: 
+  html_document:
+    keep_md: true
+---
+
+The ToothGrowth(Datasets) describes the response of the length of odontoblasts (teeth) in each of 10 guinea pigs at each of three dose levels of Vitamin C (0.5, 1, and 2 mg) with each of two delivery methods (orange juice or ascorbic acid). The data contain 60 observations on 3 variables, 
+
+1. [,1]  len	numeric	Tooth length,
+2. [,2]  supp	factor	Supplement type (VC or OJ),
+3. [,3]  dose	numeric	Dose in milligrams.
+
+In this project, we will use the hypothesis tests to compare tooth growth by supplement and dose.
+
+
+First, we need to simply visualize the data to get the properties of the parameters. The following code plots the data with ggplot2 package. 
+
+```{r, message=FALSE,warning=FALSE,cache=TRUE}
+library(datasets)
+library(ggplot2)
+ggplot(data=ToothGrowth, aes(x=as.factor(dose), y=len, fill=supp)) +
+  geom_boxplot() +
+  facet_grid(. ~ supp) +
+  xlab("Dose in miligrams") +
+  ylab("Tooth length") +
+  guides(fill=guide_legend(title="Supplement type"))
+```
+
+The boxplot shows that the tooth lenght has positive correlation with the dosage of both supplements(VC/OJ).
+The summary table is shown as followed.
+
+```{r, message=FALSE, warning=FALSE}
+library(dplyr)
+ToothGrowth %>%
+  group_by(supp,dose) %>%
+  summarise(Q25th_len = quantile(len,0.25),
+            Q50th_len = quantile(len,0.5),
+            Q75th_len = quantile(len,0.75),
+            avg_len = mean(len),            
+            sd_len = sd(len)) -> data
+data
+```
+
+We can study the relations between `len` and `supp` and `dose` by using t hypothesis test. The following table shows the t-test results combined with p-value and confidence intervals.
+
+```{r}
+tests = list()
+dose = c(0.5,1,2)
+for (d in dose) {
+  ojd = ToothGrowth$len[ToothGrowth$dose == d & ToothGrowth$supp == "OJ"]
+  vcd = ToothGrowth$len[ToothGrowth$dose == d & ToothGrowth$supp == "VC"]
+  t <- t.test(ojd, vcd)
+  id <- paste0("OJ","-", "VC",",",d)
+  tests <- rbind(tests, list(id=id, p.value=t$p.value, conf.lo=t$conf.int[1], conf.hi=t$conf.int[2]))
+}
+tests
+```
+
+From the t-test results, we need to reject the following hypotheses:
+
+1. The difference of mean-value between OJ and VC in dose 0.5 is zero.
+2. The difference of mean-value between OJ and VC in dose 1.0 is zero.
+
+We cannot distinguish the difference between OJ and VC in dose 2. Therefore, we can conclude that in dose 0.5 and dose 1, the tooth length with OJ supplement is longer than that with VC. However, in dose 2, the tooth length with OJ and VC supplements does not have significant difference.
