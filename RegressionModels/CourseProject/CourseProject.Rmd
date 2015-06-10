@@ -1,0 +1,136 @@
+---
+title: "Regression Models Course Project"
+author: "CHLin"
+output: 
+  html_document:
+    keep_md: true
+---
+
+## Synopsis
+
+```{r, results='hide'}
+Sys.setlocale("LC_ALL", "C")
+data(mtcars)
+data = mtcars
+```
+
+The `mtcars` data was extracted from the 1974 Motor Trend US magazine, and comprises fuel consumption and 10 aspects of automobile design and performance for 32 automobiles (1973-74 models). The dataset contains with 32 observations on 11 variables.
+
+1. [, 1]  mpg	Miles/(US) gallon
+2. [, 2]	cyl	Number of cylinders
+3. [, 3]	disp	Displacement (cu.in.)
+4. [, 4]	hp	Gross horsepower
+5. [, 5]	drat	Rear axle ratio
+6. [, 6]	wt	Weight (lb/1000)
+7. [, 7]	qsec	1/4 mile time
+8. [, 8]	vs	V/S
+9. [, 9]	am	Transmission (0 = automatic, 1 = manual)
+10. [,10]	gear	Number of forward gears
+11. [,11]	carb	Number of carburetors
+
+The dataset is provided by Henderson and Velleman (1981), Building multiple regression models interactively. Biometrics, 37, 391-411.
+
+```{r}
+str(mtcars)
+```
+
+In this report, we will answer the two questions:
+
+1. Is an automatic or manual transmission better for MPG
+2. Quantify the MPG difference between automatic and manual transmissions
+
+## Analysis and Results
+
+According to the appendix correlation matrix, since `am` has high correlation with `cyl`, `disp`, `drat`, `wt`, and `gear`, we include the independent variables of `am`, `hp`, `vs` , `carb`.  If one check the correlation of the four variables, one can find that `hp` has high correlation with `vs` and `carb`. We also drop the two variables, and therfore we only has two independent variables `am` and `hp`.  Both Fig.1 and Fig.2 show that the manual transmission has better MPG than automatic transmission. 
+
+
+``` {r, warning=FALSE, echo=FALSE}
+library(ggplot2)
+library(grid)
+multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
+  require(grid)
+
+  # Make a list from the ... arguments and plotlist
+  plots <- c(list(...), plotlist)
+
+  numPlots = length(plots)
+
+  # If layout is NULL, then use 'cols' to determine layout
+  if (is.null(layout)) {
+    # Make the panel
+    # ncol: Number of columns of plots
+    # nrow: Number of rows needed, calculated from # of cols
+    layout <- matrix(seq(1, cols * ceiling(numPlots/cols)),
+                    ncol = cols, nrow = ceiling(numPlots/cols))
+  }
+
+ if (numPlots==1) {
+    print(plots[[1]])
+
+  } else {
+    # Set up the page
+    grid.newpage()
+    pushViewport(viewport(layout = grid.layout(nrow(layout), ncol(layout))))
+
+    # Make each plot, in the correct location
+    for (i in 1:numPlots) {
+      # Get the i,j matrix positions of the regions that contain this subplot
+      matchidx <- as.data.frame(which(layout == i, arr.ind = TRUE))
+
+      print(plots[[i]], vp = viewport(layout.pos.row = matchidx$row,
+                                      layout.pos.col = matchidx$col))
+    }
+  }
+}
+
+mtcars$am1 = factor(mtcars$am, levels=c(0,1),labels=c("auto","manual"))
+p1 = ggplot(data=mtcars, aes(x=am1, y=mpg,fill=am1)) +
+  geom_boxplot() +
+  xlab("Engine") +
+  ylab("MPG") +
+  guides(fill=guide_legend(title="Transmission")) + 
+  ggtitle("Fig1: The relation between MPG and Transmissiontype")
+
+p2 = ggplot(data=mtcars, aes(x=hp, y=mpg,color=am1)) +  
+  geom_point(size=3) +
+  xlab("hp") +
+  ylab("MPG") + 
+  geom_smooth(method=lm,   # Add linear regression lines
+              se=FALSE,    # Don't add shaded confidence region
+              fullrange=TRUE) + 
+  scale_color_discrete(name ="Transmission ") + 
+  ggtitle("Fig2: The relation between MPG and Hoursepower")
+
+multiplot(p1,p2, cols=1)
+```
+
+The quantitative MPG difference between automatic and manual transmissions is shown as follow. In this alalysis, we simply apply the linear regression model.
+
+```{r}
+fit = lm(mpg~am + hp, data=data)
+summary(fit)
+par(mfrow=c(2, 2),oma=c(0,0,2,0))
+plot(fit, sub.caption ="Fig3: The two-variables linear model")
+```
+ 
+One can find that the Adjusted R-squard is 0.7670, which is the proportion of MPG variance explained in this model.  If one uses all the variables to fit the model, the Adjusted R-squard is 0.8066 as shown in appendix, which is better than the two variables model. However, in the all-variables fitting model, due to the multicollinearity between the variables, there is no significant coefficients and this make the model hard to interpret.
+
+Fig.3 shows that (1) there is no pattern in the the residuals plot, (2) the residuals are close to Gaussian distribution, and (3) there is no significant outlier in the dataset to affect the regression model. In the regression model, one can interpret that the MPG of manual transmission is higher than automatic by 5.2771 Miles/gallon. As the Hoursepower increases by one unit, the MPG drop by 0.0589 Miles/gallon. 
+
+In conclusion, if the other conditions are the same, the two-variables model predict that the MPG in manual transmission is higher than the automatic one by 5.2771 with 95% confidence interval 5.2771 $\pm$ 2.1591.
+
+
+## Appendix
+
+```{r}
+data = mtcars
+data$am1 = NULL
+cor(data)
+pairs(mpg ~ ., data = data)
+```
+
+```{r}
+fit2 = lm(mpg~., data=data)
+summary(fit2)
+
+```
